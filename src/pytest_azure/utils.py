@@ -238,8 +238,10 @@ def _get_resource_name(rp) -> str:
     column_width = 40
 
     for resource in list(resource_list):
-        print(f"{resource.name:<{column_width}}{resource.type:<{column_width}}"
-        f"{str(resource.created_time):<{column_width}}{str(resource.changed_time):<{column_width}}")
+        print(
+            f"{resource.name:<{column_width}}{resource.type:<{column_width}}"
+            f"{str(resource.created_time):<{column_width}}{str(resource.changed_time):<{column_width}}"
+        )
 
         if rp in resource.type:
             return resource.name
