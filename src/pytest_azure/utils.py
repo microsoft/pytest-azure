@@ -205,7 +205,6 @@ def get_ml_name():
 def get_compute_client() -> ComputeManagementClient:
     """
     Get new Azure Compute Client using env variables.
-    
     https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-virtual-machines
 
     @return: Authenticated Compute Client
@@ -259,15 +258,17 @@ def _get_resource_names(rp) -> str:
 
     resource_names = []
     for resource in list(resource_list):
-        print(f"{resource.name:<{column_width}}{resource.type:<{column_width}}"
-        f"{str(resource.created_time):<{column_width}}{str(resource.changed_time):<{column_width}}")
+        print(
+            f"{resource.name:<{column_width}}{resource.type:<{column_width}}"
+            f"{str(resource.created_time):<{column_width}}{str(resource.changed_time):<{column_width}}"
+        )
 
         if rp in resource.type:
             resource_names.append(resource.name)
     return resource_names
 
 
-def get_key_vault_secret(secret, key_vault = None):
+def get_key_vault_secret(secret, key_vault=None):
     """
     Get Secret from Key Vault
 
