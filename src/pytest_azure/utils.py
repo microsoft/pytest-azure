@@ -172,12 +172,20 @@ def _get_workspace_name():
     return _get_resource_name("Microsoft.Databricks")
 
 
-def _get_key_vault_name():
+def get_key_vault_name():
     return _get_resource_name("Microsoft.KeyVault")
+
+
+def get_key_vault_names():
+    return _get_resource_names("Microsoft.KeyVault")
 
 
 def get_web_app_name():
     return _get_resource_name("Microsoft.Web")
+
+
+def get_aks_name():
+    return _get_resource_name("Microsoft.ContainerService")
 
 
 def get_vm_name():
@@ -197,7 +205,7 @@ def get_ml_name():
 def get_compute_client() -> ComputeManagementClient:
     """
     Get new Azure Compute Client using env variables.
-
+    
     https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-virtual-machines
 
     @return: Authenticated Compute Client
@@ -223,6 +231,18 @@ def _get_resource_name(rp) -> str:
     @param rp: Resource Provider Name
     @return (str): Name of Resource
     """
+    return _get_resource_names[0]
+
+
+def _get_resource_names(rp) -> str:
+    """
+    Get the Name of the first Resource in a Resource Group of the Provided RP type using env variables.
+
+    https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-list-resource-groups
+
+    @param rp: Resource Provider Name
+    @return (str): Name of Resource
+    """
     print(credential())
     tenant_id = credential()["tenant_id"]
     aad_id = credential()["aad_id"]
@@ -237,17 +257,17 @@ def _get_resource_name(rp) -> str:
     resource_list = resource_client.resources.list_by_resource_group(resource_group(), expand="createdTime,changedTime")
     column_width = 40
 
+    resource_names = []
     for resource in list(resource_list):
-        print(
-            f"{resource.name:<{column_width}}{resource.type:<{column_width}}"
-            f"{str(resource.created_time):<{column_width}}{str(resource.changed_time):<{column_width}}"
-        )
+        print(f"{resource.name:<{column_width}}{resource.type:<{column_width}}"
+        f"{str(resource.created_time):<{column_width}}{str(resource.changed_time):<{column_width}}")
 
         if rp in resource.type:
-            return resource.name
+            resource_names.append(resource.name)
+    return resource_names
 
 
-def get_key_vault_secret(secret):
+def get_key_vault_secret(secret, key_vault = None):
     """
     Get Secret from Key Vault
 
@@ -257,7 +277,7 @@ def get_key_vault_secret(secret):
     @return: secret in plain text
     """
     _set_policy()
-    key_vault = _get_key_vault_name()
+    key_vault = key_vault or get_key_vault_name()
 
     from azure.identity import DefaultAzureCredential
     from azure.keyvault.secrets import SecretClient
@@ -275,18 +295,8 @@ def _set_policy():
     # Vault/request information
     subscription_id = credential()["azure_preview_subscription"]
     group_name = resource_group()
-    vault_name = _get_key_vault_name()
+    vault_name = get_key_vault_name()
     operation_kind = "add"
-
-    url = (
-        "https://management.azure.com/subscriptions/"
-        + subscription_id
-        + "/resourceGroups/"
-        + resource_group()
-        + "/providers/Microsoft.Databricks/workspaces/"
-        + workspace_name
-        + "?api-version=2018-04-01"
-    )
 
     management_uri = (
         "https://management.azure.com/"
