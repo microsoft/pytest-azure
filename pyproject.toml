@@ -3,11 +3,11 @@ requires = ["flit"]
 build-backend = "flit.buildapi"
 
 [project]
-name =  "py-project-toml"
+name =  "pytest-azure"
 authors = [
     {name = "Daniel Ciborowski", email = "dciborow@microsoft.com"},
 ]
-description = "Sample Python Project for creating a new Python Module"
+description = "Pytest utilities and mocks for Azure"
 readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -21,11 +21,21 @@ classifiers = [
 ]
 requires-python = ">=3.7"
 dynamic = ["version"]
+dependencies = [
+    "azureml-core>=1.21.0.post2",
+    "azure-identity>=1.4.1",
+    "azure-keyvault>=4.1.0",
+    "msrestazure>=0.6.4",
+    "azure-mgmt-compute>=20.0.0",
+    "azure-mgmt-resource>=12.1.0",
+    "python-dotenv>=0.14.0",
+    "pytest",
+    "requests",
+    "azure-mgmt-resource",
+    "azure-common",
+]
 
 [project.optional-dependencies]
-spark = [
-    "pyspark>=3.0.0"
-]
 test = [
     "bandit[toml]==1.7.4",
     "black==22.1.0",
@@ -51,7 +61,7 @@ Source = "https://github.com/microsoft/python-package-template"
 Tracker = "https://github.com/microsoft/python-package-template/issues"
 
 [tool.flit.module]
-name = "python_package"
+name = "pytest_azure"
 
 [tool.bandit]
 exclude_dirs = ["build","dist","tests","scripts"]
