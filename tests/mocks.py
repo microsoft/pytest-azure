@@ -33,6 +33,7 @@ def az_secret_create(self, sec_name, sec_value):
 
     return MockSecret(sec_name)
 
+
 def az_secret_get(self, sec_name):
     class MockSecret:
         def __init__(self, name):
@@ -105,9 +106,7 @@ def mock_az_vault_good(monkeypatch):
 @pytest.fixture
 def mock_az_vault_bad(monkeypatch):
     monkeypatch.setattr(AzureLoginValidation, "get_viable_credential", az_provide_cred)
-    monkeypatch.setattr(
-        AzureKeyVault, "_collect_secret_info", fail_az_vault_secret_dummy
-    )
+    monkeypatch.setattr(AzureKeyVault, "_collect_secret_info", fail_az_vault_secret_dummy)
     monkeypatch.setattr(SecretClient, "set_secret", az_secret_create_throw)
     monkeypatch.setattr(SecretClient, "begin_delete_secret", az_secret_delete_throw)
 
