@@ -1,10 +1,16 @@
 import json
 import os
+import uuid
 
 import requests
-from azure.identity import ClientSecretCredential
+from azure.core.exceptions import ResourceExistsError
+from azure.graphrbac import GraphRbacManagementClient
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.resource import ResourceManagementClient
+from msrestazure.azure_active_directory import ServicePrincipalCredentials
 
 API_VERSION = "/api/2.0"
 
@@ -25,11 +31,11 @@ def credential():
 
     """
     return {
-        "aad_id": os.getenv("AAD_ID"),
+        "AZURE_CLIENT_ID": os.getenv("AZURE_CLIENT_ID", os.getenv("AAD_ID")),
         "object_id": os.getenv("OBJ_ID"),
-        "aad_secret": os.getenv("AAD_SECRET"),
-        "tenant_id": os.getenv("TENANT_ID"),
-        "azure_preview_subscription": os.getenv("SUBSCRIPTION_ID"),
+        "AZURE_CLIENT_SECRET": os.getenv("AZURE_CLIENT_SECRET", os.getenv("aad_secret")),
+        "tenant_id": os.getenv("AZURE_TENANT_ID", os.getenv("TENANT_ID")),
+        "SUBSCRIPTION_ID": os.getenv("SUBSCRIPTION_ID"),
     }
 
 
@@ -63,8 +69,8 @@ def management_access_key():
 
 def _get_access_key(resource):
     tenant_id = credential()["tenant_id"]
-    aad_id = credential()["aad_id"]
-    secret = credential()["aad_secret"]
+    aad_id = credential()["AZURE_CLIENT_ID"]
+    secret = credential()["AZURE_CLIENT_SECRET"]
 
     url = "https://login.microsoftonline.com/%s/oauth2/token" % tenant_id
     headers = {"content-type": "application/x-www-form-urlencoded"}
@@ -86,7 +92,7 @@ def get_library_status(aad_access_key, management_access_key):
     :param management_access_key:
     :return: response from get request
     """
-    sub_id = credential()["azure_preview_subscription"]
+    sub_id = credential()["SUBSCRIPTION_ID"]
 
     workspace_name = _get_workspace_name()
     instance_id = _get_instance_id(workspace_name, management_access_key)
@@ -109,7 +115,7 @@ def execute_db_notebook(notebook, aad_access_key, management_access_key):
     :param management_access_key:
     :return: response from post request
     """
-    sub_id = credential()["azure_preview_subscription"]
+    sub_id = credential()["SUBSCRIPTION_ID"]
 
     workspace_name = _get_workspace_name()
     instance_id = _get_instance_id(workspace_name, management_access_key)
@@ -148,7 +154,7 @@ def _get_instance_id(workspace_name, management_access_key):
     :param workspace_name:
     :return:
     """
-    subscription_id = credential()["azure_preview_subscription"]
+    subscription_id = credential()["SUBSCRIPTION_ID"]
 
     url = (
         "https://management.azure.com/subscriptions/"
@@ -205,15 +211,16 @@ def get_ml_name():
 def get_compute_client() -> ComputeManagementClient:
     """
     Get new Azure Compute Client using env variables.
+
     https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-virtual-machines
 
     @return: Authenticated Compute Client
     """
     print(credential())
     tenant_id = credential()["tenant_id"]
-    aad_id = credential()["aad_id"]
-    secret = credential()["aad_secret"]
-    subscription_id = credential()["azure_preview_subscription"]
+    aad_id = credential()["AZURE_CLIENT_ID"]
+    secret = credential()["AZURE_CLIENT_SECRET"]
+    subscription_id = credential()["SUBSCRIPTION_ID"]
 
     sp_credential = ClientSecretCredential(
         tenant_id=tenant_id, client_id=aad_id, client_secret=secret, subscription_id=subscription_id
@@ -230,23 +237,23 @@ def _get_resource_name(rp) -> str:
     @param rp: Resource Provider Name
     @return (str): Name of Resource
     """
-    return _get_resource_names[0]
+    return _get_resource_names(rp)[0]
 
 
-def _get_resource_names(rp) -> str:
+def _get_resource_names(rp) -> list:
     """
     Get the Name of the first Resource in a Resource Group of the Provided RP type using env variables.
 
     https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-list-resource-groups
 
     @param rp: Resource Provider Name
-    @return (str): Name of Resource
+    @return (list): Names of Resources
     """
     print(credential())
     tenant_id = credential()["tenant_id"]
-    aad_id = credential()["aad_id"]
-    secret = credential()["aad_secret"]
-    subscription_id = credential()["azure_preview_subscription"]
+    aad_id = credential()["AZURE_CLIENT_ID"]
+    secret = credential()["AZURE_CLIENT_SECRET"]
+    subscription_id = credential()["SUBSCRIPTION_ID"]
 
     sp_credential = ClientSecretCredential(
         tenant_id=tenant_id, client_id=aad_id, client_secret=secret, subscription_id=subscription_id
@@ -268,33 +275,49 @@ def _get_resource_names(rp) -> str:
     return resource_names
 
 
-def get_key_vault_secret(secret, key_vault=None):
+def get_key_vault_secret(secret, key_vault=None, rbac=True):
     """
     Get Secret from Key Vault
 
     Set Access Policy for SP if it is not already set.
 
     @param secret: Name of Secret to retrieve
+    @param key_vault: Name of Key Vault to retrieve secret from
     @return: secret in plain text
     """
-    _set_policy()
+    key_vault = key_vault or get_key_vault_name()
+    if rbac:
+        _set_rbac_access_key_vault(key_vault)
+
+    secret_client = SecretClient("https://" + key_vault + ".vault.azure.net/", DefaultAzureCredential())
+    return secret_client.get_secret(secret).value
+
+
+def _set_rbac_access_key_vault(key_vault=None):
     key_vault = key_vault or get_key_vault_name()
 
-    from azure.identity import DefaultAzureCredential
-    from azure.keyvault.secrets import SecretClient
+    subscription_id = credential()["SUBSCRIPTION_ID"]
+    object_id = credential()["object_id"]
 
-    secret_client = SecretClient(
-        vault_url="https://" + key_vault + ".vault.azure.net/", credential=DefaultAzureCredential()
-    )
-    secret = secret_client.get_secret(secret)
-
-    return secret.value
+    auth_client = AuthorizationManagementClient(DefaultAzureCredential(), subscription_id)
+    role = "00482a5a-887f-4fb3-b363-3b7fe8e74483"  # Key Vault Administrator
+    role_definition_id = f"/subscriptions/{subscription_id}/providers/Microsoft.Authorization/roleDefinitions/{role}"
+    try:
+        auth_client.role_assignments.create(
+            f"/subscriptions/{subscription_id}/resourceGroups/{resource_group()}/providers/Microsoft.KeyVault/vaults/{key_vault}",
+            uuid.uuid4(),
+            {
+                "role_definition_id": role_definition_id,
+                "principal_id": object_id,
+            },
+        )
+    except ResourceExistsError:
+        pass  # Role Assignment already exists
 
 
 def _set_policy():
-
     # Vault/request information
-    subscription_id = credential()["azure_preview_subscription"]
+    subscription_id = credential()["SUBSCRIPTION_ID"]
     group_name = resource_group()
     vault_name = get_key_vault_name()
     operation_kind = "add"
