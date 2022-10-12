@@ -4,13 +4,11 @@ import uuid
 
 import requests
 from azure.core.exceptions import ResourceExistsError
-from azure.graphrbac import GraphRbacManagementClient
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.resource import ResourceManagementClient
-from msrestazure.azure_active_directory import ServicePrincipalCredentials
 
 API_VERSION = "/api/2.0"
 
