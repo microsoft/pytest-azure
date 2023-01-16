@@ -12,6 +12,11 @@ def test_credential():
     for key in cred_keys:
         assert key in credential(), key + " not found"
 
+@pytest.mark.integration
+def test_int_credential():
+    cred_keys = ["aad_id", "aad_secret"]
+    for key in cred_keys:
+        assert key in credential(), key + " not found"
 
 @pytest.mark.skip
 def test_aad_access_key(aad_access_key):
