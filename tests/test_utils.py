@@ -7,8 +7,13 @@ def test_resource_group():
     assert not resource_group()
 
 
+@pytest.mark.integration
+def test_integration_marker():
+    assert True
+
+
 def test_credential():
-    cred_keys = ["aad_id", "aad_secret"]
+    cred_keys = ["AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"]
     for key in cred_keys:
         assert key in credential(), key + " not found"
 
