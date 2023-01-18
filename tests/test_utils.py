@@ -9,7 +9,7 @@ def test_resource_group():
 
 @pytest.mark.integration
 def test_integration_marker():
-    assert true
+    assert True
 
 
 @pytest.mark.skip
