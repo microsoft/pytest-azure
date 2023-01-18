@@ -7,6 +7,11 @@ def test_resource_group():
     assert not resource_group()
 
 
+@pytest.mark.integration
+def test_integration_marker():
+    assert true
+
+
 def test_credential():
     cred_keys = ["aad_id", "aad_secret"]
     for key in cred_keys:
