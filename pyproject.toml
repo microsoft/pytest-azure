@@ -22,17 +22,18 @@ classifiers = [
 requires-python = ">=3.7"
 dynamic = ["version"]
 dependencies = [
-    "azureml-core>=1.21.0.post2",
+    "azure-common",
     "azure-identity>=1.4.1",
     "azure-keyvault>=4.1.0",
-    "msrestazure>=0.6.4",
+    "azure-mgmt-authorization>=3.0.0",
     "azure-mgmt-compute>=20.0.0",
+    "azure-mgmt-containerservice",
     "azure-mgmt-resource>=12.1.0",
+    "kubernetes",
+    "msrestazure>=0.6.4",
     "python-dotenv>=0.14.0",
     "pytest",
     "requests",
-    "azure-mgmt-resource",
-    "azure-common",
 ]
 
 [project.optional-dependencies]
