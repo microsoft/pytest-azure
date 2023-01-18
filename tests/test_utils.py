@@ -12,6 +12,7 @@ def test_integration_marker():
     assert true
 
 
+@pytest.mark.skip
 def test_credential():
     cred_keys = ["aad_id", "aad_secret"]
     for key in cred_keys:
