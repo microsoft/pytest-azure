@@ -49,7 +49,7 @@ test = [
     "pylint==2.12.2",
     "pylint_junit",
     "pytest-cov==3.0.0",
-    "pytest-mock<3.7.1",
+    "pytest-mock<3.11.2",
     "pytest-runner",
     "pytest==7.1.0",
     "pytest-github-actions-annotate-failures",
